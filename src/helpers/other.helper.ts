@@ -1,3 +1,5 @@
+import format from "date-fns/format";
+
 export function sleep(milliseconds: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
@@ -15,6 +17,29 @@ export function addHoursAndGetSeconds(hours: number): bigint {
   const futureTimeMillis = BigInt(currentTimeMillis) + hoursInMillis;
   const futureTimeSeconds = futureTimeMillis / BigInt(1000);
   return futureTimeSeconds;
+}
+
+export function areDatesInSameDay(dateLeft: Date, dateRight: Date) {
+  return (
+    dateLeft.getFullYear() === dateRight.getFullYear() &&
+    dateLeft.getMonth() === dateRight.getMonth() &&
+    dateLeft.getDate() === dateRight.getDate()
+  );
+}
+
+export function msToTimeString(intervalMs: number) {
+  const intervalDate = new Date(new Date().getTime() + intervalMs)
+
+  return format(intervalDate, "MM-dd HH:mm:ss")
+}
+
+export function generateShortString(str: string, symbolsCount:number = 4): string {
+  if (str.length <= symbolsCount * 2) return str;
+  
+  const start = str.substring(0, symbolsCount);
+  const end = str.substring(str.length - symbolsCount);
+
+  return `${start}...${end}`;
 }
 
 // add name generator

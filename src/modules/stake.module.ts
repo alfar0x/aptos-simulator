@@ -21,25 +21,20 @@ export class LiquidStakeModule {
   }
 
   public async makeRandomStakeAction(): Promise<string> {
-    try {
-      const stAPTbalance = await getTokenBalance(tokenList[4].address, this.account, this.client);
-      const tAPTbalance = await getTokenBalance(tokenList[5].address, this.account, this.client);
+    const stAPTbalance = await getTokenBalance(tokenList[4].address, this.account, this.client);
+    const tAPTbalance = await getTokenBalance(tokenList[5].address, this.account, this.client);
 
-      let txHash;
+    let txHash;
 
-      if (stAPTbalance + tAPTbalance > 0) {
-        const action = getRandomInt(0, 1);
-        if (action) txHash = await this.randomUnStake(stAPTbalance, tAPTbalance);
-        else txHash = await this.randomStake();
-      } else {
-        txHash = await this.randomStake();
-      }
-
-      return txHash;
-    } catch (error: any) {
-      console.log(`${this.account.address}: Error occured - ${error.message}`);
-      return 'error';
+    if (stAPTbalance + tAPTbalance > 0) {
+      const action = getRandomInt(0, 1);
+      if (action) txHash = await this.randomUnStake(stAPTbalance, tAPTbalance);
+      else txHash = await this.randomStake();
+    } else {
+      txHash = await this.randomStake();
     }
+
+    return txHash;
   }
 
   private async randomUnStake(stAPTbalance: number, tAPTbalance: number): Promise<string> {

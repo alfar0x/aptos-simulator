@@ -1,10 +1,34 @@
+import { renderTimeSec, sortField, sortOrder } from "../config.const";
+
 export function renderOutput(walletOutputDataArr) {
-  setInterval(() => printWalletsInfo(walletOutputDataArr), 500);
+  setInterval(() => printWalletsInfo(walletOutputDataArr), renderTimeSec * 1000);
 }
+
+const sortByKey = <K extends string, T extends Record<string | K, any>>(
+  array: T[],
+  key: K,
+  order: string
+): T[] => {
+  return array.slice().sort((a, b) => {
+    if (a[key] < b[key]) return order === "asc" ? 1 : -1;
+
+    if (a[key] > b[key]) return order === "asc" ? -1 : 1;
+
+    return 0;
+  });
+};
+
+export default sortByKey;
+
 
 function printWalletsInfo(walletOutputDataArr) {
   console.clear();
-  console.table(walletOutputDataArr);
+
+  const sortedList = sortField && sortOrder ?
+    sortByKey(walletOutputDataArr, sortField, sortOrder) 
+    : walletOutputDataArr
+
+  console.table(sortedList);
   isProgramCompleted(walletOutputDataArr);
 }
 

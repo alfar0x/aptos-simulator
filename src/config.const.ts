@@ -1,15 +1,13 @@
-export const txAmountMin = 4;
-export const txAmountMax = 7;
+export const sleepBeforeStartAccountSecMin = 10;
+export const sleepBeforeStartAccountSecMax = 60 * 60 * 60;
 
-// in seconds
-export const sleepBetweenTransactionsMin = 120;
-export const sleepBetweenTransactionsMax = 300;
+export const txAmountMin = 40;
+export const txAmountMax = 80;
 
-export const rpcUrl = 'https://rpc.ankr.com/http/aptos/v1';
+export const sleepBetweenTransactionsSecMin = 60 * 10;
+export const sleepBetweenTransactionsSecMax = 60 * 60 * 30;
 
-// put 1 here if you want to perform swaps only
-// 2 - only nft
-// 3 - only liquid staking
-// null - random choice
+export const sortField = 'next_step_time';
+export const sortOrder = 'desc'
 
-export const manualTxTypeChoice = null;
+export const renderTimeSec = 10

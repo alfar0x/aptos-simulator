@@ -5,10 +5,10 @@ import { NftModule } from './modules/nft.module';
 import { SwapModule } from './modules/swap.module';
 
 import {
-  manualTxTypeChoice,
-  rpcUrl,
-  sleepBetweenTransactionsMax,
-  sleepBetweenTransactionsMin,
+  sleepBeforeStartAccountSecMin,
+  sleepBeforeStartAccountSecMax,
+  sleepBetweenTransactionsSecMin,
+  sleepBetweenTransactionsSecMax,
   txAmountMax,
   txAmountMin,
 } from './config.const';
@@ -16,9 +16,9 @@ import {
 import { tokenList } from './tokenList.const';
 import { renderOutput } from './helpers/console.helper';
 import { importWallets } from './helpers/file-import.helper';
-import { getRandomInt, sleep } from './helpers';
+import { env, generateShortString, getRandomInt, msToTimeString, sleep } from './helpers';
 
-const client = new AptosClient(rpcUrl);
+const client = new AptosClient(env.RPC_URL);
 
 let walletOutputDataArr: WalletOutputData[] = [];
 
@@ -37,21 +37,28 @@ async function main() {
   }
 
   for (let i = 0; i < privateKeys.length; i++) {
+    const aptosAccount = new AptosAccount(new HexString(privateKeys[i]).toUint8Array());
+    const address = aptosAccount.address().toString()
+
     walletOutputDataArr.push({
-      session_duration_min: 0,
+      address: generateShortString(address),
       progress: '0/0',
-      current_tx_type: '',
-      last_tx_result: '',
-      min_until_next_tx: 0,
+      current_step_type: '',
+      last_step_result: '',
+      next_step_time: '',
+      end_time: '',
       status: 0,
     });
+
+    const sleepBeforeStartSec = getRandomInt(sleepBeforeStartAccountSecMin, sleepBeforeStartAccountSecMax);
 
     session(
       getRandomInt(txAmountMin, txAmountMax),
       privateKeys[i],
       i,
-      sleepBetweenTransactionsMin * 1000,
-      sleepBetweenTransactionsMax * 1000
+      sleepBetweenTransactionsSecMax * 1000,
+      sleepBetweenTransactionsSecMin * 1000,
+      sleepBeforeStartSec * 1000
     );
   }
 
@@ -65,70 +72,105 @@ async function session(
   privateKey: string,
   walletID: number,
   timeSleepMin: number,
-  timeSleepMax: number
+  timeSleepMax: number,
+  sleepBeforeStart: number,
 ) {
   const dexTrader = new SwapModule(privateKey, client);
   const liquidStaker = new LiquidStakeModule(privateKey, client);
   const nftTrader = new NftModule(privateKey, client);
 
   const msDelayArr: number[] = [];
-  let totalDelay = 0;
-  for (let i = 0; i < txAmount; i++) {
+  let totalDelay = sleepBeforeStart;
+
+  for (let i = 0; i < txAmount-1; i++) {
     const randomSleep = getRandomInt(timeSleepMin, timeSleepMax);
     msDelayArr.push(randomSleep);
     totalDelay += randomSleep;
   }
 
-  walletOutputDataArr[walletID].session_duration_min = Number((totalDelay / 60000).toFixed(2));
+  const endTime = msToTimeString(totalDelay);
+
+  walletOutputDataArr[walletID].end_time = endTime;
   walletOutputDataArr[walletID].progress = '0/' + txAmount;
 
+  let totalTimeUntilEnd = totalDelay
+
+  if (sleepBeforeStart) {
+    walletOutputDataArr[walletID].current_step_type = 'sleeping before start';
+    walletOutputDataArr[walletID].next_step_time = msToTimeString(sleepBeforeStart)
+
+    await sleep(sleepBeforeStart);
+
+    totalTimeUntilEnd = totalTimeUntilEnd - sleepBeforeStart
+
+    walletOutputDataArr[walletID].end_time = msToTimeString(totalTimeUntilEnd)
+  }
+
   for (let i = 0; i < txAmount; i++) {
-    walletOutputDataArr[walletID].min_until_next_tx = Number((msDelayArr[i] / 60000).toFixed(2));
+    const txType:number = getRandomInt(1,3);
+    let txHash = '';
 
-    const txType: number = manualTxTypeChoice || getRandomInt(1, 3);
-    let txHash;
-    switch (txType) {
-      case 1:
-        walletOutputDataArr[walletID].current_tx_type = 'DEX trading';
-        txHash = await dexTrader.makeRandomSwap();
-        break;
-
-      case 2:
-        walletOutputDataArr[walletID].current_tx_type = 'NFT action';
-        txHash = await nftTrader.makeRandomNftAction(tokenList[0].estimatedPriceInUsd);
-        break;
-
-      case 3:
-        walletOutputDataArr[walletID].current_tx_type = 'liquid staking action';
-        txHash = await liquidStaker.makeRandomStakeAction();
-        break;
-
-      default:
-        break;
-    }
-
-    if (txHash === 'error') {
-      walletOutputDataArr[walletID].last_tx_result = 'Error when creating a TX';
-    } else {
-      const txResult = ((await client.waitForTransactionWithResult(txHash as string)) as any).success;
-      if (txResult) {
-        walletOutputDataArr[walletID].last_tx_result = 'TX was successful';
-      } else {
-        walletOutputDataArr[walletID].last_tx_result = 'TX failed';
+    try{
+      switch (txType) {
+        case 1:
+          walletOutputDataArr[walletID].current_step_type = 'DEX trading';
+          txHash = await dexTrader.makeRandomSwap();
+          break;
+          
+        case 2:
+          walletOutputDataArr[walletID].current_step_type = 'NFT action';
+          txHash = await nftTrader.makeRandomNftAction(tokenList[0].estimatedPriceInUsd);
+          break;
+          
+        case 3:
+          walletOutputDataArr[walletID].current_step_type = 'Liquid staking action';
+          txHash = await liquidStaker.makeRandomStakeAction();
+          break;
+          
+        default:
+          break;
       }
+              
+    } catch (error){
+      console.error((error as Error).message)
+      txHash = 'error'
     }
-    walletOutputDataArr[walletID].progress = i + 1 + '/' + txAmount;
+            
+    if(!txHash || txHash == 'error') {
+      walletOutputDataArr[walletID].last_step_result = 'error';
+    } else {
+      const txResult = await client.waitForTransactionWithResult(txHash);
+      
+      const lastStepResult = (txResult as any)?.success ? 'Success' : 'Fail'
 
-    await sleep(msDelayArr[i]);
+      walletOutputDataArr[walletID].last_step_result = lastStepResult;
+    }
+
+    walletOutputDataArr[walletID].progress = i + 1 + '/' + txAmount;
+    
+    const isLastStepDone = i >= txAmount - 1
+    
+    if(isLastStepDone) {
+      walletOutputDataArr[walletID].next_step_time = 'done'
+      walletOutputDataArr[walletID].end_time = new Date().toLocaleString()
+    } else {
+      walletOutputDataArr[walletID].next_step_time = msToTimeString(msDelayArr[i]);
+
+      await sleep(msDelayArr[i]);
+      
+      totalTimeUntilEnd = totalTimeUntilEnd - msDelayArr[i]
+      walletOutputDataArr[walletID].end_time = msToTimeString(totalTimeUntilEnd);
+    }
   }
   walletOutputDataArr[walletID].status = 1;
 }
 
 declare type WalletOutputData = {
-  session_duration_min: number;
+  address: string;
   progress: string;
-  current_tx_type: string;
-  last_tx_result: string;
-  min_until_next_tx: number;
+  current_step_type: string;
+  last_step_result: string;
+  next_step_time: string;
+  end_time: string;
   status: number;
 };
