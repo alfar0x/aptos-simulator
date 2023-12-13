@@ -1,7 +1,11 @@
 import { renderTimeSec, sortField, sortOrder } from "../config.const";
 
 export function renderOutput(walletOutputDataArr) {
-  setInterval(() => printWalletsInfo(walletOutputDataArr), renderTimeSec * 1000);
+  printWalletsInfo(walletOutputDataArr);
+  setInterval(
+    () => printWalletsInfo(walletOutputDataArr),
+    renderTimeSec * 1000
+  );
 }
 
 const sortByKey = <K extends string, T extends Record<string | K, any>>(
@@ -20,13 +24,13 @@ const sortByKey = <K extends string, T extends Record<string | K, any>>(
 
 export default sortByKey;
 
-
 function printWalletsInfo(walletOutputDataArr) {
   console.clear();
 
-  const sortedList = sortField && sortOrder ?
-    sortByKey(walletOutputDataArr, sortField, sortOrder) 
-    : walletOutputDataArr
+  const sortedList =
+    sortField && sortOrder
+      ? sortByKey(walletOutputDataArr, sortField, sortOrder)
+      : walletOutputDataArr;
 
   console.table(sortedList);
   isProgramCompleted(walletOutputDataArr);
