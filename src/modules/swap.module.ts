@@ -1,6 +1,7 @@
 import { AptosAccount, AptosClient, HexString } from 'aptos';
 import { Token, tokenList } from '../tokenList.const';
 import { addHoursAndGetSeconds, calculatePercentage, getRandomInt, getTokenBalance } from '../helpers';
+import { minAptCashBalanceToSwapIt } from '../config.const';
 
 const LIQUID_SWAP_CONTRACT_ADDRESS = '0x190d44266241744264b964a37b8f09863167a12d3e70cda39376cfb4e3561e12';
 
@@ -25,31 +26,34 @@ export class SwapModule {
     let amount;
 
     const accountTokens: Token[] = [];
+    let isNativeTokenAllowedToSell = true;
 
     for (let i = 0; i < tokenList.length; i++) {
       const tokenBalance = await getTokenBalance(tokenList[i].address, this.account, this.client);
       const cashInToken = tokenList[i].estimatedPriceInUsd * (tokenBalance / 10 ** tokenList[i].decimals);
       if (cashInToken > 0.1) accountTokens.push(tokenList[i]);
+      if(tokenList[i].symbol === "APT" && cashInToken < minAptCashBalanceToSwapIt) isNativeTokenAllowedToSell = false
     }
 
-    fromToken = accountTokens[getRandomInt(0, accountTokens.length - 1)];
+    const fromTokenStartIdx = isNativeTokenAllowedToSell ? 0 : 1;
 
-    while (true) {
-      // if APT is not the only one token available - we should grab another one
-      if (accountTokens.length === 1 && accountTokens[0] === tokenList[0]) {
-        toToken = tokenList[getRandomInt(1, tokenList.length - 1)];
-      } else {
-        toToken = tokenList[getRandomInt(0, tokenList.length - 1)];
-      }
+    fromToken = accountTokens[getRandomInt(fromTokenStartIdx, accountTokens.length - 1)];
 
-      // till we found the token that is different
-      if (toToken.address !== fromToken.address) break;
+    if(accountTokens.length === 1 && accountTokens[0] !== tokenList[0]) {
+      return 'native balance too small'
     }
+
+    const isNativeTokenOnlyAvailable = accountTokens.length === 1 && accountTokens[0] === tokenList[0];
+
+    // if APT is not the only one token available - we should grab another one
+    const toTokenStartIdx = isNativeTokenOnlyAvailable ? 1 : 0;
+
+    toToken = tokenList.filter(t => t.address !== fromToken.address)[getRandomInt(toTokenStartIdx, tokenList.length - 1)];
 
     const fromTokenBalance = await getTokenBalance(fromToken.address, this.account, this.client);
 
     if (fromToken === tokenList[0]) {
-      amount = getRandomInt(calculatePercentage(fromTokenBalance, 10), calculatePercentage(fromTokenBalance, 70));
+      amount = getRandomInt(calculatePercentage(fromTokenBalance, 10), calculatePercentage(fromTokenBalance, 50));
     } else {
       amount = getRandomInt(calculatePercentage(fromTokenBalance, 10), fromTokenBalance);
     }

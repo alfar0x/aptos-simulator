@@ -13,3 +13,5 @@ export const sortOrder = 'desc'
 export const renderTimeSec = 10 * 60
 
 export const sellCollectionNamesBlacklist = ['Galxe OAT', 'Aptos Names V1'];
+
+export const minAptCashBalanceToSwapIt = 0.5
