@@ -2,4 +2,7 @@
   "[javascript]": {
     "editor.formatOnSave": false
   },
+  "[typescript]": {
+    "editor.formatOnSave": false
+  },
 }

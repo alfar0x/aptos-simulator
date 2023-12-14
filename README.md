@@ -23,6 +23,8 @@
 
     **sleepBetweenTransactionsMin** - minimum delay between each transaction in seconds
     **sleepBetweenTransactionsMax** - maximum delay between each transaction in seconds
+    **sellCollectionNamesBlacklist** - do not sell valuable nft from this list
+    
     For example, if you specified timeSleepMin = 120 and timeSleepMax = 300, then on each the delay between each transaction will be randomly selected in the range from 2 to 5 minutes
 
 

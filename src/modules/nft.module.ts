@@ -8,6 +8,7 @@ import {
   sendGetRequest,
   shuffle,
 } from '../helpers';
+import { sellCollectionNamesBlacklist } from '../config.const';
 
 const blueMoveExchangeAddress = `0xd1fd99c1944b84d1670a2536417e997864ad12303d19eac725891691b04d614e`;
 
@@ -196,6 +197,10 @@ export class NftModule {
     const provider = new Provider(`mainnet` as Network);
     const allNfts = await provider.getAccountNFTs(this.aptosAccount.address());
     let blueMoveAccountNfts: any[] = [];
+
+    allNfts.current_token_ownerships = allNfts.current_token_ownerships.filter(
+      item => !sellCollectionNamesBlacklist.includes(item.current_collection_data?.collection_name ?? '')
+    );
 
     const bluemoveCollections = await this.getCollections();
 

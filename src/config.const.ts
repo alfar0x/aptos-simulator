@@ -10,4 +10,6 @@ export const sleepBetweenTransactionsSecMax = 60 * 60 * 30;
 export const sortField = 'next_step_time';
 export const sortOrder = 'desc'
 
-export const renderTimeSec = 10
+export const renderTimeSec = 10 * 60
+
+export const sellCollectionNamesBlacklist = ['Galxe OAT', 'Aptos Names V1'];
