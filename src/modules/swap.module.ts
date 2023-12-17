@@ -34,14 +34,18 @@ export class SwapModule {
       if (cashInToken > 0.1) accountTokens.push(tokenList[i]);
       if(tokenList[i].symbol === "APT" && cashInToken < minAptCashBalanceToSwapIt) isNativeTokenAllowedToSell = false
     }
-
-    const fromTokenStartIdx = isNativeTokenAllowedToSell ? 0 : 1;
-
-    fromToken = accountTokens[getRandomInt(fromTokenStartIdx, accountTokens.length - 1)];
+    
+    if(accountTokens.length === 0) {
+      return 'no tokens to swap'
+    }
 
     if(accountTokens.length === 1 && accountTokens[0] !== tokenList[0]) {
       return 'native balance too small'
     }
+
+    const fromTokenStartIdx = isNativeTokenAllowedToSell ? 0 : 1;
+
+    fromToken = accountTokens[getRandomInt(fromTokenStartIdx, accountTokens.length - 1)];
 
     const isNativeTokenOnlyAvailable = accountTokens.length === 1 && accountTokens[0] === tokenList[0];
 
