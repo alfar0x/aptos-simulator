@@ -1,6 +1,6 @@
 import { AptosAccount, AptosClient, HexString } from 'aptos';
 import { Token, tokenList } from '../tokenList.const';
-import { addHoursAndGetSeconds, calculatePercentage, getRandomInt, getTokenBalance } from '../helpers';
+import { addHoursAndGetSeconds, calculatePercentage, getRandomInt, getTokenBalance, sleep } from '../helpers';
 import { minAptCashBalanceToSwapIt } from '../config.const';
 
 const LIQUID_SWAP_CONTRACT_ADDRESS = '0x190d44266241744264b964a37b8f09863167a12d3e70cda39376cfb4e3561e12';
@@ -32,6 +32,7 @@ export class SwapModule {
     for (let i = 0; i < tokenList.length; i++) {
       const tokenBalance = await getTokenBalance(tokenList[i].address, this.account, this.client);
       const cashInToken = tokenList[i].estimatedPriceInUsd * (tokenBalance / 10 ** tokenList[i].decimals);
+      console.log(tokenList[i].symbol, cashInToken)
       if (cashInToken > minCashInToken) accountTokens.push(tokenList[i]);
       if(tokenList[i].symbol === "APT" && cashInToken < Math.max(minCashInToken, minAptCashBalanceToSwapIt)) {
         isNativeTokenAllowedToSell = false
@@ -40,24 +41,29 @@ export class SwapModule {
     
     if(accountTokens.length === 0) return 'no tokens to swap'
 
-    const fromTokenList = isNativeTokenAllowedToSell ? accountTokens : accountTokens.filter(t => t.symbol!=="APT")
+    const fromTokenList = isNativeTokenAllowedToSell 
+      ? [...accountTokens] 
+      : accountTokens.filter(t => t.symbol !== "APT")
+
 
     if(!isNativeTokenAllowedToSell && fromTokenList.length === 0) {
       return 'not tokens to swap in native'
     }
 
-    fromToken = [getRandomInt(0, fromTokenList.length - 1)];
+    fromToken = fromTokenList[getRandomInt(0, fromTokenList.length - 1)];
 
-    const toTokenList = tokenList.filter(t => t.address !== fromToken.address)
+    const toTokenList = isNativeTokenAllowedToSell 
+      ? tokenList.filter(t => t.address !== fromToken.address) 
+      : tokenList.filter(t => t.symbol === "APT")
 
     toToken = toTokenList[getRandomInt(0, toTokenList.length - 1)];
 
     const fromTokenBalance = await getTokenBalance(fromToken.address, this.account, this.client);
 
-    if (fromToken === tokenList[0]) {
-      amount = getRandomInt(calculatePercentage(fromTokenBalance, 10), calculatePercentage(fromTokenBalance, 50));
-    } else if(!isNativeTokenAllowedToSell) {
+    if (!isNativeTokenAllowedToSell) {
       amount = fromTokenBalance
+    } else if (fromToken === tokenList[0]) {
+      amount = getRandomInt(calculatePercentage(fromTokenBalance, 2), calculatePercentage(fromTokenBalance, 20));
     } else {
       amount = getRandomInt(calculatePercentage(fromTokenBalance, 10), calculatePercentage(fromTokenBalance, 100));
     }
@@ -65,7 +71,7 @@ export class SwapModule {
     if (!accountTokens.includes(toToken)) {
       const regTokenTx = await this.registerToken(toToken);
       const txResult = ((await this.client.waitForTransactionWithResult(regTokenTx as string)) as any).success;
-      if (!txResult) return 'error';
+      if (!txResult) return 'tx res is null';
     }
 
     const sendedTxHash = await this.liquidSwap(fromToken, toToken, amount);
