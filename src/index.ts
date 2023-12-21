@@ -11,12 +11,13 @@ import {
   sleepBetweenTransactionsSecMax,
   txAmountMax,
   txAmountMin,
+  TX_TYPES,
 } from './config.const';
 
 import { tokenList } from './tokenList.const';
 import { renderOutput } from './helpers/console.helper';
 import { importWallets } from './helpers/file-import.helper';
-import { env, generateShortString, getRandomInt, msToTimeString, sleep } from './helpers';
+import { env, generateShortString, getRandomInt, msToTimeString, shuffle, sleep } from './helpers';
 
 const client = new AptosClient(env.RPC_URL);
 
@@ -106,8 +107,9 @@ async function session(
     walletOutputDataArr[walletID].end_time = msToTimeString(totalTimeUntilEnd)
   }
 
+
   for (let i = 0; i < txAmount; i++) {
-    const txType:number = getRandomInt(1,3);
+    const txType:number = shuffle(TX_TYPES)[0]
     let txHash = '';
 
     try{

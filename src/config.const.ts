@@ -1,5 +1,5 @@
 export const sleepBeforeStartAccountSecMin = 10;
-export const sleepBeforeStartAccountSecMax = 60 * 60 * 60;
+export const sleepBeforeStartAccountSecMax = 11;
 
 export const txAmountMin = 40;
 export const txAmountMax = 80;
@@ -14,4 +14,10 @@ export const renderTimeSec = 10 * 60
 
 export const sellCollectionNamesBlacklist = ['Galxe OAT', 'Aptos Names V1'];
 
-export const minAptCashBalanceToSwapIt = 0.5
+export const minAptCashBalanceToSwapIt = 5
+
+export const TX_TYPES = [
+  1, // SWAP
+  // 2, // NFT
+  // 3, // STAKE
+]

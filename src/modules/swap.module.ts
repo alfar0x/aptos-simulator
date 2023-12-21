@@ -4,6 +4,7 @@ import { addHoursAndGetSeconds, calculatePercentage, getRandomInt, getTokenBalan
 import { minAptCashBalanceToSwapIt } from '../config.const';
 
 const LIQUID_SWAP_CONTRACT_ADDRESS = '0x190d44266241744264b964a37b8f09863167a12d3e70cda39376cfb4e3561e12';
+const minCashInToken = 0.1
 
 export class SwapModule {
   private privateKey: string;
@@ -31,35 +32,34 @@ export class SwapModule {
     for (let i = 0; i < tokenList.length; i++) {
       const tokenBalance = await getTokenBalance(tokenList[i].address, this.account, this.client);
       const cashInToken = tokenList[i].estimatedPriceInUsd * (tokenBalance / 10 ** tokenList[i].decimals);
-      if (cashInToken > 0.1) accountTokens.push(tokenList[i]);
-      if(tokenList[i].symbol === "APT" && cashInToken < minAptCashBalanceToSwapIt) isNativeTokenAllowedToSell = false
+      if (cashInToken > minCashInToken) accountTokens.push(tokenList[i]);
+      if(tokenList[i].symbol === "APT" && cashInToken < Math.max(minCashInToken, minAptCashBalanceToSwapIt)) {
+        isNativeTokenAllowedToSell = false
+      }
     }
     
-    if(accountTokens.length === 0) {
-      return 'no tokens to swap'
+    if(accountTokens.length === 0) return 'no tokens to swap'
+
+    const fromTokenList = isNativeTokenAllowedToSell ? accountTokens : accountTokens.filter(t => t.symbol!=="APT")
+
+    if(!isNativeTokenAllowedToSell && fromTokenList.length === 0) {
+      return 'not tokens to swap in native'
     }
 
-    if(accountTokens.length === 1 && accountTokens[0] !== tokenList[0]) {
-      return 'native balance too small'
-    }
+    fromToken = [getRandomInt(0, fromTokenList.length - 1)];
 
-    const fromTokenStartIdx = isNativeTokenAllowedToSell ? 0 : 1;
+    const toTokenList = tokenList.filter(t => t.address !== fromToken.address)
 
-    fromToken = accountTokens[getRandomInt(fromTokenStartIdx, accountTokens.length - 1)];
-
-    const isNativeTokenOnlyAvailable = accountTokens.length === 1 && accountTokens[0] === tokenList[0];
-
-    // if APT is not the only one token available - we should grab another one
-    const toTokenStartIdx = isNativeTokenOnlyAvailable ? 1 : 0;
-
-    toToken = tokenList.filter(t => t.address !== fromToken.address)[getRandomInt(toTokenStartIdx, tokenList.length - 1)];
+    toToken = toTokenList[getRandomInt(0, toTokenList.length - 1)];
 
     const fromTokenBalance = await getTokenBalance(fromToken.address, this.account, this.client);
 
     if (fromToken === tokenList[0]) {
       amount = getRandomInt(calculatePercentage(fromTokenBalance, 10), calculatePercentage(fromTokenBalance, 50));
+    } else if(!isNativeTokenAllowedToSell) {
+      amount = fromTokenBalance
     } else {
-      amount = getRandomInt(calculatePercentage(fromTokenBalance, 10), fromTokenBalance);
+      amount = getRandomInt(calculatePercentage(fromTokenBalance, 10), calculatePercentage(fromTokenBalance, 100));
     }
 
     if (!accountTokens.includes(toToken)) {
