@@ -32,7 +32,6 @@ export class SwapModule {
     for (let i = 0; i < tokenList.length; i++) {
       const tokenBalance = await getTokenBalance(tokenList[i].address, this.account, this.client);
       const cashInToken = tokenList[i].estimatedPriceInUsd * (tokenBalance / 10 ** tokenList[i].decimals);
-      console.log(tokenList[i].symbol, cashInToken)
       if (cashInToken > minCashInToken) accountTokens.push(tokenList[i]);
       if(tokenList[i].symbol === "APT" && cashInToken < Math.max(minCashInToken, minAptCashBalanceToSwapIt)) {
         isNativeTokenAllowedToSell = false
