@@ -14,10 +14,10 @@ export const renderTimeSec = 10 * 60
 
 export const sellCollectionNamesBlacklist = ['Galxe OAT', 'Aptos Names V1'];
 
-export const minAptCashBalanceToSwapIt = 5
+export const minAptCashBalanceToSwapIt = 1
 
 export const TX_TYPES = [
   1, // SWAP
-  // 2, // NFT
-  // 3, // STAKE
+  2, // NFT
+  3, // STAKE
 ]

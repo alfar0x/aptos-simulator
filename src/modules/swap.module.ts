@@ -46,7 +46,7 @@ export class SwapModule {
 
 
     if(!isNativeTokenAllowedToSell && fromTokenList.length === 0) {
-      return 'error. not tokens to swap in native'
+      return 'error. no tokens to swap in native'
     }
 
     fromToken = fromTokenList[getRandomInt(0, fromTokenList.length - 1)];
