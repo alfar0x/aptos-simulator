@@ -38,7 +38,7 @@ export class SwapModule {
       }
     }
     
-    if(accountTokens.length === 0) return 'no tokens to swap'
+    if(accountTokens.length === 0) return 'error. no tokens to swap'
 
     const fromTokenList = isNativeTokenAllowedToSell 
       ? [...accountTokens] 
@@ -46,7 +46,7 @@ export class SwapModule {
 
 
     if(!isNativeTokenAllowedToSell && fromTokenList.length === 0) {
-      return 'not tokens to swap in native'
+      return 'error. not tokens to swap in native'
     }
 
     fromToken = fromTokenList[getRandomInt(0, fromTokenList.length - 1)];
@@ -70,7 +70,7 @@ export class SwapModule {
     if (!accountTokens.includes(toToken)) {
       const regTokenTx = await this.registerToken(toToken);
       const txResult = ((await this.client.waitForTransactionWithResult(regTokenTx as string)) as any).success;
-      if (!txResult) return 'tx res is null';
+      if (!txResult) return 'error. tx res is null';
     }
 
     const sendedTxHash = await this.liquidSwap(fromToken, toToken, amount);

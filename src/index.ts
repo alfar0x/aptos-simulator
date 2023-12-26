@@ -138,8 +138,8 @@ async function session(
       txHash = 'error'
     }
             
-    if(!txHash || txHash == 'error') {
-      walletOutputDataArr[walletID].last_step_result = 'error';
+    if(!txHash || txHash.startsWith('error')) {
+      walletOutputDataArr[walletID].last_step_result = txHash;
     } else {
       const txResult = await client.waitForTransactionWithResult(txHash);
       
