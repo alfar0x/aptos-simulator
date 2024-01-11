@@ -141,10 +141,15 @@ async function session(
     if(!txHash || txHash.startsWith('error')) {
       walletOutputDataArr[walletID].last_step_result = txHash;
     } else {
-      const txResult = await client.waitForTransactionWithResult(txHash);
-      
-      const lastStepResult = (txResult as any)?.success ? 'Success' : 'Fail'
+      let lastStepResult = 'Fail'
 
+      try{
+        const txResult = await client.waitForTransactionWithResult(txHash);
+        if((txResult as any)?.success) lastStepResult = "Success"
+      } catch(err) {
+        lastStepResult = (err as Error)?.message
+      }
+      
       walletOutputDataArr[walletID].last_step_result = lastStepResult;
     }
 
